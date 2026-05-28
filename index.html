@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUZ ELENA OROZCO — Evidencias</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <h1 class="header__titulo">LUZ ELENA OROZCO EVIDENCIAS</h1>
+    <p class="header__subtitulo">Galería multimedia</p>
+  </header>
+
+  <main id="galeria" class="galeria"></main>
+
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Visor multimedia">
+    <button class="lightbox__cerrar" id="btnCerrarLightbox" aria-label="Cerrar">&times;</button>
+    <button class="lightbox__nav lightbox__nav--prev" id="btnPrevLightbox" aria-label="Anterior">&lsaquo;</button>
+    <button class="lightbox__nav lightbox__nav--next" id="btnNextLightbox" aria-label="Siguiente">&rsaquo;</button>
+    <div class="lightbox__contenido" id="contenidoLightbox"></div>
+    <span class="lightbox__contador" id="lightboxContador"></span>
+    <button class="lightbox__toolbar lightbox__toolbar--slideshow" id="btnSlideshowLightbox" aria-label="Slideshow">&#9654;</button>
+    <div class="lightbox__velocidad">
+      <label class="lightbox__velocidad-label" for="rangoVelocidad">Vel.</label>
+      <input type="range" class="lightbox__velocidad-input" id="rangoVelocidad" min="1" max="10" step="0.5" value="4">
+      <span class="lightbox__velocidad-valor" id="velocidadValor">4s</span>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

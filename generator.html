@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador — Google Drive Links</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #07070d;
+      color: #e8e8f0;
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 {
+      font-weight: 300;
+      font-size: 1.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      text-align: center;
+      font-weight: 200;
+      font-size: 0.85rem;
+      color: #8888a0;
+      letter-spacing: 0.1em;
+      margin-bottom: 2rem;
+    }
+    .categoria {
+      margin-bottom: 2rem;
+    }
+    .categoria h2 {
+      font-weight: 300;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #818cf8;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 0.75rem;
+    }
+    .fila {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .fila:hover { background: rgba(255,255,255,0.02); }
+    .fila .num {
+      width: 2rem;
+      text-align: right;
+      font-size: 0.7rem;
+      color: #555;
+      flex-shrink: 0;
+    }
+    .fila .nombre {
+      flex: 1;
+      font-size: 0.75rem;
+      color: #aaa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .fila input {
+      width: 380px;
+      flex-shrink: 0;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: #e8e8f0;
+      font-size: 0.72rem;
+      font-family: monospace;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    .fila input:focus {
+      border-color: #818cf8;
+      background: rgba(129,140,248,0.08);
+    }
+    .fila input.llenado {
+      border-color: rgba(129,140,248,0.3);
+    }
+    .fila .estado {
+      width: 1.2rem;
+      text-align: center;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+    .fila .estado.ok { color: #4ade80; }
+    .fila .estado.vacio { color: #555; }
+    .acciones {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      margin: 2rem 0;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: #e8e8f0;
+      font-size: 0.82rem;
+      font-family: inherit;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      backdrop-filter: blur(8px);
+    }
+    button:hover {
+      background: rgba(129,140,248,0.15);
+      border-color: #818cf8;
+      transform: scale(1.05);
+    }
+    button.primario {
+      background: rgba(129,140,248,0.15);
+      border-color: #818cf8;
+      color: #818cf8;
+    }
+    button.primario:hover {
+      background: rgba(129,140,248,0.25);
+      box-shadow: 0 0 20px rgba(129,140,248,0.2);
+    }
+    .resumen {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #8888a0;
+      margin-bottom: 1.5rem;
+    }
+    .output {
+      display: none;
+      margin-top: 1.5rem;
+    }
+    .output pre {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.68rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #c8c8d8;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .output .copy-msg {
+      font-size: 0.7rem;
+      color: #4ade80;
+      text-align: center;
+      margin-top: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .output .copy-msg.visible { opacity: 1; }
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .fila { flex-wrap: wrap; }
+      .fila .nombre { width: 100%; order: -1; }
+      .fila input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Generador de Configuraci&oacute;n</h1>
+  <p class="subtitle">Pega los enlaces compartidos de Google Drive para cada archivo</p>
+
+  <div id="categorias"></div>
+
+  <div class="resumen" id="resumen">
+    <span id="contadorCompletados">0</span> / 48 archivos con enlace
+  </div>
+
+  <div class="acciones">
+    <button class="primario" id="btnGenerar">Generar c&oacute;digo</button>
+    <button id="btnCopiar" style="display:none">Copiar al portapapeles</button>
+    <button id="btnLimpiar">Limpiar todos</button>
+  </div>
+
+  <div class="output" id="output">
+    <pre id="codigoGenerado"></pre>
+    <div class="copy-msg" id="copyMsg">&#10003; Copiado al portapapeles</div>
+  </div>
+</div>
+
+<script>
+const CATEGORIAS = {
+  "CENTRO DE INTERES DE MICRO FÚTBOL KID": [
+    "WhatsApp Image 2026-05-24 at 4.04.12 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 4.04.13 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.04.13 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 4.04.14 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.04.14 PM (2).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.04.14 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 4.07.36 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.07.36 PM (2).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.07.36 PM.jpeg",
+    "WhatsApp Video 2026-05-24 at 4.07.40 PM.mp4"
+  ],
+  "Centro de inter\u00e9s manos crestivas": [
+    "WhatsApp Image 2026-05-24 at 5.01.54 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.02.38 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.04.49 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.05.20 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.05.59 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.14.10 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 5.14.10 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.14.11 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.16.56 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 5.20.01 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 5.20.01 PM (2).jpeg",
+    "WhatsApp Image 2026-05-24 at 5.20.01 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 6.28.21 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 6.28.21 PM.jpeg",
+    "WhatsApp Video 2026-05-24 at 5.16.57 PM.mp4"
+  ],
+  "Cuerpo y expresi\u00f3n": [
+    "WhatsApp Image 2026-05-24 at 4.42.48 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 4.42.49 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.42.49 PM.jpeg",
+    "WhatsApp Image 2026-05-24 at 4.42.49 PM(1).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.45.54 PM (1).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.45.54 PM (2).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.45.54 PM (3).jpeg",
+    "WhatsApp Image 2026-05-24 at 4.45.54 PM.jpeg",
+    "WhatsApp Video 2026-05-24 at 4.18.59 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.39.59 PM.mp4"
+  ],
+  "DANZA": [
+    "WhatsApp Video 2026-05-24 at 4.09.20 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.09.46 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.10.16 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.11.50 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.12.27 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.13.17 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.15.37 PM.mp4",
+    "WhatsApp Video 2026-05-24 at 4.18.10 PM.mp4"
+  ],
+  "Justamente": [
+    "WhatsApp Image 2026-05-24 at 6.45.44 PM.jpeg",
+    "WhatsApp Image 2026-05-25 at 9.15.18 PM.jpeg",
+    "WhatsApp Image 2026-05-25 at 9.15.19 PM (1).jpeg",
+    "WhatsApp Image 2026-05-25 at 9.15.19 PM.jpeg"
+  ],
+  "Leo": [
+    "WhatsApp Image 2026-05-26 at 2.20.12 PM.jpeg"
+  ]
+};
+
+function extraerId(url) {
+  if (!url || url.trim() === '') return '';
+  const u = url.trim();
+  // /d/ID/view
+  const m1 = u.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m1) return m1[1];
+  // open?id=ID
+  const m2 = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2) return m2[1];
+  // Solo el ID (si pegaron el ID crudo)
+  if (/^[a-zA-Z0-9_-]{20,}$/.test(u)) return u;
+  return '';
+}
+
+function renderizar() {
+  const contenedor = document.getElementById('categorias');
+  contenedor.innerHTML = '';
+  let idxGlobal = 0;
+
+  for (const [cat, archivos] of Object.entries(CATEGORIAS)) {
+    const seccion = document.createElement('div');
+    seccion.className = 'categoria';
+
+    const titulo = document.createElement('h2');
+    titulo.textContent = cat + ' (' + archivos.length + ')';
+    seccion.appendChild(titulo);
+
+    for (const archivo of archivos) {
+      const fila = document.createElement('div');
+      fila.className = 'fila';
+
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = (idxGlobal + 1) + '.';
+      fila.appendChild(num);
+
+      const nombre = document.createElement('span');
+      nombre.className = 'nombre';
+      nombre.textContent = archivo;
+      fila.appendChild(nombre);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Pega el enlace de Google Drive...';
+      input.dataset.archivo = archivo;
+      input.dataset.categoria = cat;
+      input.id = 'input-' + idxGlobal;
+      fila.appendChild(input);
+
+      const estado = document.createElement('span');
+      estado.className = 'estado vacio';
+      estado.textContent = '\u25CB';
+      fila.appendChild(estado);
+
+      input.addEventListener('input', function () {
+        const id = extraerId(this.value);
+        if (id) {
+          this.classList.add('llenado');
+          estado.className = 'estado ok';
+          estado.textContent = '\u25CF';
+        } else {
+          this.classList.remove('llenado');
+          estado.className = 'estado vacio';
+          estado.textContent = '\u25CB';
+        }
+        actualizarContador();
+      });
+
+      seccion.appendChild(fila);
+      idxGlobal++;
+    }
+
+    contenedor.appendChild(seccion);
+  }
+}
+
+function actualizarContador() {
+  let count = 0;
+  const inputs = document.querySelectorAll('#categorias input');
+  for (const input of inputs) {
+    if (extraerId(input.value)) count++;
+  }
+  document.getElementById('contadorCompletados').textContent = count;
+}
+
+function generarCodigo() {
+  const inputs = document.querySelectorAll('#categorias input');
+  const datos = {};
+
+  for (const input of inputs) {
+    const id = extraerId(input.value);
+    if (!id) continue;
+    const cat = input.dataset.categoria;
+    const archivo = input.dataset.archivo;
+    if (!datos[cat]) datos[cat] = [];
+    datos[cat].push({ archivo: archivo, id: id });
+  }
+
+  const catsConDatos = Object.keys(datos).length;
+  const archivosConDatos = Object.values(datos).reduce((s, a) => s + a.length, 0);
+  if (archivosConDatos === 0) {
+    alert('No hay ning\u00fan enlace de Google Drive pegado. Pega al menos uno.');
+    return;
+  }
+
+  const salida = [];
+  salida.push('const MEDIOS_POR_CATEGORIA = {');
+  const entradas = Object.entries(datos);
+  for (let ci = 0; ci < entradas.length; ci++) {
+    const [cat, items] = entradas[ci];
+    salida.push('  "' + cat.replace(/"/g, '\\"') + '": [');
+    for (let ii = 0; ii < items.length; ii++) {
+      const item = items[ii];
+      const archivoEscaped = item.archivo.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      salida.push('    { archivo: "' + archivoEscaped + '", id: "' + item.id + '" }' + (ii < items.length - 1 ? ',' : ''));
+    }
+    salida.push('  ]' + (ci < entradas.length - 1 ? ',' : ''));
+  }
+  salida.push('};');
+  salida.push('');
+  salida.push('// ' + archivosConDatos + ' archivos configurados de ' + Object.keys(CATEGORIAS).reduce((s, c) => s + CATEGORIAS[c].length, 0));
+  salida.push('// Reemplaza MEDIOS_POR_CATEGORIA en script.js con este c\u00f3digo.');
+
+  const codigo = salida.join('\n');
+  document.getElementById('codigoGenerado').textContent = codigo;
+  document.getElementById('output').style.display = 'block';
+  document.getElementById('btnCopiar').style.display = 'inline-block';
+}
+
+function copiarCodigo() {
+  const codigo = document.getElementById('codigoGenerado').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(codigo).then(function () {
+      mostrarCopiado();
+    }).catch(function () {
+      copiarFallback(codigo);
+    });
+  } else {
+    copiarFallback(codigo);
+  }
+}
+
+function copiarFallback(texto) {
+  const ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  mostrarCopiado();
+}
+
+function mostrarCopiado() {
+  const msg = document.getElementById('copyMsg');
+  msg.classList.add('visible');
+  setTimeout(function () { msg.classList.remove('visible'); }, 2000);
+}
+
+function limpiarTodos() {
+  const inputs = document.querySelectorAll('#categorias input');
+  for (const input of inputs) {
+    input.value = '';
+    input.classList.remove('llenado');
+    const fila = input.closest('.fila');
+    if (fila) {
+      const estado = fila.querySelector('.estado');
+      if (estado) { estado.className = 'estado vacio'; estado.textContent = '\u25CB'; }
+    }
+  }
+  document.getElementById('output').style.display = 'none';
+  document.getElementById('btnCopiar').style.display = 'none';
+  actualizarContador();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  renderizar();
+  actualizarContador();
+  document.getElementById('btnGenerar').addEventListener('click', generarCodigo);
+  document.getElementById('btnCopiar').addEventListener('click', copiarCodigo);
+  document.getElementById('btnLimpiar').addEventListener('click', limpiarTodos);
+});
+</script>
+</body>
+</html>
