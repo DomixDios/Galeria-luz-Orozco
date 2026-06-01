@@ -12,7 +12,7 @@
    Si está vacío, usa los datos locales.
    ============================================ */
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4Onfi9hY0fQ5hywM6LCWY6ewWhdfFH5obhLaw-YfrhkJmQwFN719eq2viuacDg6ZaQw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMVW4H2bIjSomt7T4fsQPPVi6li4jrc862ZXxoVLXEl7JEiCweINPnRs-KJ2CNiK1mtA/exec';
 
 async function cargarConfigDesdeDrive() {
   if (!APPS_SCRIPT_URL) return null;
@@ -114,10 +114,12 @@ function autoEscanearMedios(config) {
 
   for (const [categoria, archivos] of entries) {
     for (const entrada of archivos) {
-      // Soporte dual: string (ruta local) u objeto { archivo, id } (Google Drive)
       const esDrive = typeof entrada === 'object' && entrada.id;
       const nombreArchivo = esDrive ? entrada.archivo : entrada;
       const driveId = esDrive ? entrada.id : null;
+      const thumbnailUrl = esDrive
+        ? (entrada.thumbnailUrl || "https://drive.google.com/thumbnail?sz=w400&id=" + driveId)
+        : null;
 
       const ext = nombreArchivo.substring(nombreArchivo.lastIndexOf('.')).toLowerCase();
       let tipo = null;
@@ -128,14 +130,16 @@ function autoEscanearMedios(config) {
       if (tipo) {
         let src;
         if (esDrive) {
-          src = tipo === 'imagen'
-            ? "https://lh3.googleusercontent.com/d/" + driveId
-            : "https://drive.google.com/uc?export=download&id=" + driveId + "&confirm=t";
+          if (tipo === 'imagen') {
+            src = "https://lh3.googleusercontent.com/d/" + driveId;
+          } else {
+            src = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
+          }
         } else {
           src = "recursos/" + categoria + "/" + nombreArchivo;
         }
 
-        medios.push({ tipo, src, categoria });
+        medios.push({ tipo, src, categoria, driveId, thumbnailUrl });
       }
     }
   }
@@ -216,7 +220,12 @@ function renderizarGaleria(medios) {
       } else {
         const poster = document.createElement('div');
         poster.className = 'tarjeta__img tarjeta__img--video';
-        poster.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
+        if (item.thumbnailUrl) {
+          poster.style.backgroundImage = 'url(' + item.thumbnailUrl + ')';
+          poster.style.backgroundSize = 'cover';
+          poster.style.backgroundPosition = 'center';
+        }
+        poster.style.backgroundColor = '#1a1a2e';
 
         const overlay = document.createElement('div');
         overlay.className = 'tarjeta__video-overlay';
@@ -313,10 +322,24 @@ function renderizarMediaEnLightbox(indice) {
     } else {
       const video = document.createElement('video');
       video.className = 'lightbox__video';
-      video.src = item.src;
       video.controls = true;
       video.autoplay = true;
       video.playsinline = true;
+      if (item.thumbnailUrl) video.poster = item.thumbnailUrl;
+
+      const sources = [item.src];
+      if (item.driveId) {
+        sources.push(
+          "https://docs.google.com/uc?export=download&id=" + item.driveId + "&confirm=t",
+          "https://drive.google.com/uc?export=download&id=" + item.driveId + "&confirm=t"
+        );
+      }
+      for (const url of sources) {
+        const source = document.createElement('source');
+        source.src = url;
+        video.appendChild(source);
+      }
+
       contenedor.appendChild(video);
     }
 
@@ -339,6 +362,7 @@ function navegarLightbox(dir) {
     if (video) {
       video.pause();
       video.removeAttribute('src');
+      video.innerHTML = '';
       video.load();
     }
 
@@ -368,6 +392,7 @@ function cerrarLightbox() {
   if (video) {
     video.pause();
     video.removeAttribute('src');
+    video.innerHTML = '';
     video.load();
   }
 
