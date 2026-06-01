@@ -327,23 +327,21 @@ function renderizarMediaEnLightbox(indice) {
       video.autoplay = true;
       video.muted = true;
       video.playsinline = true;
+      video.preload = 'auto';
       if (item.thumbnailUrl) video.poster = item.thumbnailUrl;
 
-      const sources = [item.src];
-      if (item.driveId) {
-        sources.push(
-          "https://docs.google.com/uc?export=open&id=" + item.driveId,
-          "https://drive.google.com/uc?export=open&id=" + item.driveId
-        );
-      }
-      for (const url of sources) {
-        const source = document.createElement('source');
-        source.src = url;
-        if (item.mimeType) source.type = item.mimeType;
-        video.appendChild(source);
-      }
+      video.src = item.src;
+      if (item.mimeType) video.type = item.mimeType;
 
       contenedor.appendChild(video);
+      video.addEventListener('error', function () {
+        var err = video.error;
+        if (err && item.driveId) {
+          video.src = "https://docs.google.com/uc?export=open&id=" + item.driveId;
+          video.load();
+          video.play().catch(function () {});
+        }
+      }, { once: true });
       video.play().catch(function () {});
     }
 
