@@ -117,6 +117,7 @@ function autoEscanearMedios(config) {
       const esDrive = typeof entrada === 'object' && entrada.id;
       const nombreArchivo = esDrive ? entrada.archivo : entrada;
       const driveId = esDrive ? entrada.id : null;
+      const mimeType = esDrive ? entrada.mimeType : null;
       const thumbnailUrl = esDrive
         ? (entrada.thumbnailUrl || "https://drive.google.com/thumbnail?sz=w400&id=" + driveId)
         : null;
@@ -133,13 +134,13 @@ function autoEscanearMedios(config) {
           if (tipo === 'imagen') {
             src = "https://lh3.googleusercontent.com/d/" + driveId;
           } else {
-            src = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
+            src = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=open";
           }
         } else {
           src = "recursos/" + categoria + "/" + nombreArchivo;
         }
 
-        medios.push({ tipo, src, categoria, driveId, thumbnailUrl });
+        medios.push({ tipo, src, categoria, driveId, thumbnailUrl, mimeType });
       }
     }
   }
@@ -330,13 +331,14 @@ function renderizarMediaEnLightbox(indice) {
       const sources = [item.src];
       if (item.driveId) {
         sources.push(
-          "https://docs.google.com/uc?export=download&id=" + item.driveId + "&confirm=t",
-          "https://drive.google.com/uc?export=download&id=" + item.driveId + "&confirm=t"
+          "https://docs.google.com/uc?export=open&id=" + item.driveId,
+          "https://drive.google.com/uc?export=open&id=" + item.driveId
         );
       }
       for (const url of sources) {
         const source = document.createElement('source');
         source.src = url;
+        if (item.mimeType) source.type = item.mimeType;
         video.appendChild(source);
       }
 
