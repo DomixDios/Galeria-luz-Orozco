@@ -325,6 +325,7 @@ function renderizarMediaEnLightbox(indice) {
       video.className = 'lightbox__video';
       video.controls = true;
       video.autoplay = true;
+      video.muted = true;
       video.playsinline = true;
       if (item.thumbnailUrl) video.poster = item.thumbnailUrl;
 
@@ -343,6 +344,7 @@ function renderizarMediaEnLightbox(indice) {
       }
 
       contenedor.appendChild(video);
+      video.play().catch(function () {});
     }
 
     const contador = document.getElementById('lightboxContador');
